@@ -6,7 +6,7 @@ Welcome! This is my first deep learning project and it is going to be a simple k
 I will be implementing Convolution Neural Network (CNN) Classifier to predict the category of dog or cat. I used the Asirra dataset, which can be found here. https://www.kaggle.com/c/dogs-vs-cats
 I will be using Python on VSC. 
 
-###### Creating training data
+#### Creating training data
 ```
 filenames=os.listdir("/Users/admin/Documents/cat dog/dogsvscats/train")
 
@@ -21,7 +21,8 @@ for filename in filenames:
 df=pd.DataFrame({
     'filename':filenames,
     'category':categories })
-
+```
+```
 np.shape(df)
 ```
 > (25001, 2)
@@ -29,6 +30,7 @@ np.shape(df)
 There are 25001 images in our train dataset. 12501 cats and 12500 dogs. Data seems well balanced to proceed. 
 <img width="393" alt="Screenshot1" src="https://user-images.githubusercontent.com/61202712/114333550-2640dd80-9b7b-11eb-9abc-79d97afc1365.png">
 
+#### Train validation split 
 Now, we will create a new dataset containing 2 subsets, a training set with 10,000 samples of each class (20,000 in total) and a validation dataset with 5001 total.
 ```
 train_df, validate_df = train_test_split(df, test_size = 0.2, random_state = 42)
@@ -37,18 +39,19 @@ validate_df = validate_df.reset_index(drop=True)
 total_train=train_df.shape[0]  # 20 000 
 total_validate=validate_df.shape[0]  #5001
 ```
-Training set 
+###### Training set 
 ```
 train_df['category'].value_counts().plot.bar()
 ```
+<img width="393" alt="Screenshot1" src="https://user-images.githubusercontent.com/61202712/114343885-6c08a080-9b91-11eb-8259-8938c6f9b7be.png">
 
-Validation set 
+###### Validation set 
 ```
 validate_df['category'].value_counts().plot.bar()
 ```
+<img width="377" alt="Screenshot 2021-04-12 at 1 17 49 PM" src="https://user-images.githubusercontent.com/61202712/114343928-7c208000-9b91-11eb-9a16-17b832ccfa66.png">
 
-
-###### Define terms 
+#### Define terms 
 ```
 batch_size=50 
 FAST_RUN = False
@@ -57,6 +60,7 @@ IMAGE_HEIGHT=128
 IMAGE_SIZE=(IMAGE_WIDTH, IMAGE_HEIGHT)
 IMAGE_CHANNELS=3
 ```
+
 
 ## Define callbacks and learning rate 
 A large learning rate allows the model to learn faster, at the cost of arriving on a sub-optimal final set of weights. A smaller learning rate may allow the model to learn a more optimal or even globally optimal set of weights but may take significantly longer to train.
@@ -115,11 +119,6 @@ model.add(BatchNormalization())
 model.add(MaxPooling2D(pool_size=(2,2)))
 model.add(Dropout(0.25))
 
-model.add(Conv2D(128,(3,3),activation='relu'))
-model.add(BatchNormalization())
-model.add(MaxPooling2D(pool_size=(2,2)))
-model.add(Dropout(0.25))
-
 model.add(Flatten())
 model.add(Dense(512,activation='relu'))
 model.add(BatchNormalization())
@@ -135,9 +134,7 @@ model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics =['a
 
 
 ## Model fitting 
-I am aware that we use image augmentation (rotating, flipping etc) to increase the number of images for the training set to prevent overfitting. This splits images into different batches, and each batch will be applied random image transformation on a random selection of images to create many more images. 
-I use flow_from_directory method to load images and apply image augmentation. The output of these generators will yield batches of 128x128 RGB images, each batch will have 50 samples. 
-We will fit the generator to the model with 30 epochs, *validatioin_steps=5001/50=101*, *steps_per_epoch=19999/50 batches=400* . 
+The output of these generators will yield batches of 128x128 RGB images, each batch will have 50 samples. We will fit the generator to the model with 30 epochs, *validatioin_steps=5001/50=101*, *steps_per_epoch=19999/50 batches=400* . 
 
 ```
 # training generator 
@@ -171,10 +168,96 @@ history = model.fit_generator(
     callbacks=callbacks)
 ```
 
+```
+plot_accuracy_and_loss(history)
+```
+
+
+```
+# prepare testing data
+test_filenames = os.listdir("/Users/admin/Documents/cat dog/dogsvscats/test1")
+test_df = pd.DataFrame({
+    'filename': test_filenames
+})
+nb_samples = test_df.shape[0]
+
+test_generator = test_datagen.flow_from_directory(
+     test_df, x_col='filename', y_col=None, target_size=IMAGE_SIZE, batch_size=50, class_mode=None, 
+     shuffle=False)
+
+test_loss, test_acc = model.evaluate_generator(test_generator, steps=101)
+print('test acc:', test_acc)
+```
+
+```
+predict = model.predict_generator(test_generator, steps=np.ceil(nb_samples/batch_size))
+
+test_df['category'] = np.argmax(predict, axis=-1) #pick category with highest probability with numpy avg max 
+
+# convering predict cat into generator class. It is the classes that image generator map while converting data into computer vision
+label_map = dict((v,k) for k,v in train_generator.class_indices.items())
+test_df['category'] = test_df['category'].replace(label_map)
+
+test_df['category'] = test_df['category'].replace({ 'dog': 1, 'cat': 0 })
+
+test_df['category'].value_counts().plot.bar()
+```
 
 Now, let's fit and test the model. I obtained a training accuracy of __ and test accuracy of __ . The scores are reasonably close, suggesting the model is probably not over or underfit.
 
 
 ## Model improvements 
 We should always strive to improve accuracy and reduce overfitting. This is by either adding more convolution layers or adding more dense layers.
+I have decided to add another convolution layer into my model building and rerun.
+```
+model.add(Conv2D(128,(3,3),activation='relu'))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2,2)))
+model.add(Dropout(0.25))
+```
+
+The output i had was __
+
+
+## Data augmentation 
+Data augmentation means to increase the number of data by adding more data (rotating, flipping, shearing) to existing dataset to reduce overfitting during training. 
+Generate a number of random transformations on an image and visualize what it looks like. 
+
+```
+from keras.preprocessing.image import ImageDataGenerator
+from keras.preprocessing import image
+
+datagen = ImageDataGenerator(
+    rotation_range=40,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True,
+    fill_mode='nearest')
+
+train_cats_dir = os.path.join(train_df, 'cats')
+fnames = [os.path.join(train_cats_dir, fname) for fname in os.listdir(train_cats_dir)]
+
+img_path = fnames[4] # Choose one image to augment
+
+img = image.load_img(img_path, target_size=(224, 224)) # load image and resize it
+
+x = image.img_to_array(img) # Convert to a Numpy array with shape (224, 224, 3)
+
+x = x.reshape((1,) + x.shape)
+
+# Generates batches of randomly transformed images.
+# Loops indefinitely, so you need to break once four images have been created
+i = 0
+for batch in datagen.flow(x, batch_size=1):
+    plt.figure(i)
+    imgplot = plt.imshow(image.array_to_img(batch[0]))
+    i += 1
+    if i % 4 == 0:
+        break
+plt.show()
+```
+
+#### Build a model with data augmentation (_x per epoch) 
 
