@@ -4,8 +4,17 @@ Welcome! This is my first deep learning project and it is going to be a simple k
 
 ## Problem statement: 
 I will be implementing Convolution Neural Network (CNN) Classifier to predict the category of dog or cat. I used the Asirra dataset, which can be found here. https://www.kaggle.com/c/dogs-vs-cats
-There are 10 000 images, 80% training and 20% testing. In the train set, 4000 are dogs, 4000 are cats. In test set, 1000 are dogs, 1000 are cats. 
 I will be using Python on VSC. 
+
+Let's look at our data. 
+```
+np.shape(df)
+```
+"*(25001, 2)*"
+There are 25001 rows and 2 columns in our train dataset. Data seems well balanced. 
+
+![Screenshot](Screenshot1.png)
+
 
 
 ## Model building 
