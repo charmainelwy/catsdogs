@@ -89,9 +89,6 @@ Batch normalization layer is a method to make the network faster and more stable
 Pooling layers reduce the input sizes of an image by downsampling to reduce the number of parameters and computation in the network. This is done without losing key features and spatial structure information in the images. 
 A pooling layer follows after each convolutional layer, which performs a MAX operation which means it selects the maximum value inside each 2 x 2 matrix since I chose *pool_size=(2,2)*.
 
-#### Dropout layer 
-A dropout layer drops some of the neurons as a form of regularization to prevent overfitting. 
-
 #### Flattening 
 Finally, a flatten layer helps to pass output into a regular MLP. 
 
@@ -107,22 +104,18 @@ model=Sequential()
 model.add(Conv2D(32,(3,3),activation='relu',input_shape=(IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_CHANNELS)))
 model.add(BatchNormalization())
 model.add(MaxPooling2D(pool_size=(2,2)))
-model.add(Dropout(0.25))
 
 model.add(Conv2D(64,(3,3),activation='relu'))
 model.add(BatchNormalization())
 model.add(MaxPooling2D(pool_size=(2,2)))
-model.add(Dropout(0.25))
 
 model.add(Conv2D(128,(3,3),activation='relu'))
 model.add(BatchNormalization())
 model.add(MaxPooling2D(pool_size=(2,2)))
-model.add(Dropout(0.25))
 
 model.add(Flatten())
 model.add(Dense(512,activation='relu'))
 model.add(BatchNormalization())
-model.add(Dropout(0.5))
 model.add(Dense(2,activation='softmax'))
 ```
 
@@ -308,46 +301,33 @@ model.add(Dropout(0.25))
 ```
 After fitting the model, we achieved 95.6% accuracy, validation accuracy 90.2%, loss of 11% and validation loss of 27.3%. 
 
+```
+acc      = history.history[     'accuracy' ]
+val_acc  = history.history[ 'val_accuracy' ]
+loss     = history.history[    'loss' ]
+val_loss = history.history['val_loss' ]
+
+epochs   = range(len(acc))
+
+# Plot training and validation accuracy per epoch
+plt.plot  ( epochs,     acc )
+plt.plot  ( epochs, val_acc )
+plt.title ('Training and validation accuracy')
+plt.figure()
+
+# Plot training and validation loss per epoch
+plt.plot  ( epochs,     loss )
+plt.plot  ( epochs, val_loss )
+plt.title ('Training and validation loss'   )
+```
+
+
+
 
 ## 7. Data augmentation 
 Data augmentation means to increase the number of data by adding more data (rotating, flipping, shearing) to existing dataset to reduce overfitting during training. 
 Generate a number of random transformations on an image and visualize what it looks like. 
 
-```
-from keras.preprocessing.image import ImageDataGenerator
-from keras.preprocessing import image
 
-datagen = ImageDataGenerator(
-    rotation_range=40,
-    width_shift_range=0.2,
-    height_shift_range=0.2,
-    shear_range=0.2,
-    zoom_range=0.2,
-    horizontal_flip=True,
-    fill_mode='nearest')
-
-train_cats_dir = os.path.join(train_df, 'cats')
-fnames = [os.path.join(train_cats_dir, fname) for fname in os.listdir(train_cats_dir)]
-
-img_path = fnames[4] # Choose one image to augment
-
-img = image.load_img(img_path, target_size=(224, 224)) # load image and resize it
-
-x = image.img_to_array(img) # Convert to a Numpy array with shape (224, 224, 3)
-
-x = x.reshape((1,) + x.shape)
-
-# Generates batches of randomly transformed images.
-# Loops indefinitely, so you need to break once four images have been created
-i = 0
-for batch in datagen.flow(x, batch_size=1):
-    plt.figure(i)
-    imgplot = plt.imshow(image.array_to_img(batch[0]))
-    i += 1
-    if i % 4 == 0:
-        break
-plt.show()
-```
-
-#### Build a model with data augmentation (_x per epoch) 
+#### Build a model with data augmentation 
 
