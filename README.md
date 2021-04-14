@@ -321,8 +321,7 @@ plt.plot  ( epochs, val_loss )
 plt.title ('Training and validation loss'   )
 ```
 
-<img width="367" alt="Screenshot 2021-04-13 at 8 28 27 PM" src="https://user-images.githubusercontent.com/61202712/114552162-deaf7400-9c96-11eb-9a8e-b55cac310e52.png">
-*blue: training, yellow:validation* 
+
 
 
 ## 7. Data augmentation (WIP) 
